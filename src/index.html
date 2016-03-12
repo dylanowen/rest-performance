@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Performance</title>
+        <meta charset="utf-8">
+        <script src="js/main.js"></script>
+        <link rel="stylesheet" type="text/css" href="css/main.css" />
+        <script src="ace/ace.js" type="text/javascript" charset="utf-8"></script>
+    </head>
+    <body><div id="wrapper">
+        <div id="tests"></div>
+        <div id="codeWrapper">
+            <h3>Code</h3>
+            <pre id="code" class="editor">
+console.log(input);
+
+if (input.count <= 0) {
+    return { requestUrl: null };
+}
+
+return {
+    requestUrl: baseUrl,
+    nextInput: {
+        count: --input.count
+    }
+};
+            </pre>
+        </div>
+        <div id="inputWrapper">
+            <h3>Input</h3>
+            <pre id="startInput" class="editor">
+{
+    "count": 10
+}
+            </pre>
+        </div>
+        <div style="clear: both; margin: 1%">
+            <h3>Base Uri</h3>   <input type="text" id="baseUrl" style="width:1000px" /><br />
+            <h3>Name</h3>       <input type="text" id="name" /><br /><br />
+            <button id="createTest">Create Test</button>
+        </div>
+        <!--<textarea id="output" rows="20" cols="200"></textarea>-->
+    </div></body>
+</html>

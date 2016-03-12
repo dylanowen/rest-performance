@@ -1,0 +1,13 @@
+{
+  "name": "rest-performance",
+  "version": "0.0.1",
+  "author": "Dylan Owen <dyltotheo@gmail.com>",
+  "description": "",
+  "devDependencies": {
+    "del": "^2.2.0",
+    "gulp": "^3.9.1",
+    "gulp-typescript": "^2.12.0",
+    "gulp-watch": "^4.3.5",
+    "run-sequence": "^1.1.5"
+  }
+}
