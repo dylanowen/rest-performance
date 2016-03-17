@@ -15,11 +15,11 @@ const ready = (): void => {
     codeEditor.setTheme('ace/theme/solarized_dark');
     codeEditor.getSession().setMode('ace/mode/javascript');
 
-    const inputEditor = ace.edit('startInput');
+    const inputEditor = ace.edit('startState');
     inputEditor.setTheme('ace/theme/solarized_dark');
     inputEditor.getSession().setMode('ace/mode/json');
 
-    const baseUrlInput = <HTMLInputElement>document.getElementById('baseUrl');
+    const baseUrlInput = <HTMLInputElement>document.getElementById('baseUrls');
     const nameInput = <HTMLInputElement>document.getElementById('name');
     const createTestButton = <HTMLButtonElement>document.getElementById('createTest');
 

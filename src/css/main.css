@@ -21,3 +21,12 @@
     width: 100%;
     height: 100px;
 }
+
+.url_title {
+    margin-bottom: 3px;
+}
+
+.output {
+    height: 100px;
+    margin: 5px;
+}

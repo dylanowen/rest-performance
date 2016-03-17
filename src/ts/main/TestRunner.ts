@@ -1,27 +1,27 @@
 /// <reference path="./Ajax.ts"/>
+
 interface GeneratorFunction {
-    (input: any): { requestUrl: string, nextInput?: any };
+    (state: any): { requestUrl: string, nextState?: any };
 }
 
-class Test {
+class TestRunner {
     private output: HTMLTextAreaElement;
+    private tOutput: HTMLTextAreaElement;
     private generator: GeneratorFunction;
-    private startObject: any;
+    private initialState: any;
 
     private inProgress: boolean = false;
     private testStartTime: number;
     private totalRuns: number;
 
-    public constructor(wrapper: HTMLElement, output: HTMLTextAreaElement, deleteButton: HTMLButtonElement, goButton: HTMLButtonElement, generator: GeneratorFunction, startObject: any) {
+    public constructor(output: HTMLTextAreaElement, tOutput: HTMLTextAreaElement, generator: GeneratorFunction, initialState: any) {
         this.output = output;
+        this.tOutput = tOutput;
         this.generator = generator;
-        this.startObject = startObject;
-
-        deleteButton.addEventListener('click', this.remove.bind(this, wrapper));
-        goButton.addEventListener('click', this.run.bind(this));
+        this.initialState = initialState;
     }
 
-    private run(): void {
+    public run(): void {
         if(this.inProgress) {
             console.error('Test already running');
 
@@ -30,40 +30,47 @@ class Test {
 
         this.start();
 
-        this.iterator(this.startObject)
+        this.iterator(this.initialState)
     }
 
-    private iterator(input: any): void {
-        const {requestUrl, nextInput} = this.generator(input);
+    private iterator(state: any): void {
+        const testSettings = this.generator(state);
 
-        if (!this.inProgress || requestUrl == null || requestUrl.length == 0) {
+        if (!this.inProgress || testSettings == null || testSettings.requestUrl == null || testSettings.requestUrl.length == 0) {
             this.end();
             return;
         }
 
-        this.output.value += requestUrl + '\n';
+        this.output.value += this.totalRuns + ': ' + testSettings.requestUrl + '\n';
         const startTime = performance.now();
 
-        Ajax.request(requestUrl, (status: STATUS) => {
-            const totalTime = Math.round(performance.now() - startTime);
+        Ajax.request({
+            url: testSettings.requestUrl,
+            callback: (status: Ajax.STATUS) => {
+                const totalTime = Math.round(performance.now() - startTime);
 
-            this.output.value += status + ':' + STATUS[status] + ' -> ' + formatMs(totalTime) + '\n\n';
-            this.totalRuns++;
+                this.output.value += status + ':' + Ajax.STATUS[status] + ' -> ' + formatMs(totalTime) + '\n\n';
+                this.totalRuns++;
 
-            this.output.scrollTop = this.output.scrollHeight;
+                this.output.scrollTop = this.output.scrollHeight;
 
-            this.iterator(nextInput);
+                this.tOutput.value += totalTime + '\n';
+                this.tOutput.scrollTop = this.tOutput.scrollHeight;
+
+                this.iterator(testSettings.nextState);
+            }
         });
     }
 
     private start(): void {
         this.output.value = '';
+        this.tOutput.value = '';
         this.inProgress = true;
         this.totalRuns = 0;
         this.testStartTime = performance.now();
     }
 
-    private stop(): void {
+    public stop(): void {
         this.inProgress = false;
     }
 
@@ -72,16 +79,12 @@ class Test {
         const totalTime = Math.round(performance.now() - this.testStartTime);
         const average = Math.round(totalTime / this.totalRuns);
 
-        this.output.value += 'Total Time: ' + formatMs(totalTime) + '\nTotal Runs: ' + this.totalRuns + '\nAverage: ' + formatMs(average);
+        this.output.value += 'Total Time: ' + formatMs(totalTime) + '\nTotal Requests: ' + this.totalRuns + '\nAverage: ' + formatMs(average);
 
         this.output.scrollTop = this.output.scrollHeight;
     }
 
-    private remove(wrapper: HTMLElement): void {
-        this.stop();
-
-        wrapper.parentNode.removeChild(wrapper);
-    }
+    
 }
 
 const TIME_STEPS = [

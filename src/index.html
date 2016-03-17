@@ -8,37 +8,51 @@
         <script src="ace/ace.js" type="text/javascript" charset="utf-8"></script>
     </head>
     <body><div id="wrapper">
-        <div id="tests"></div>
         <div id="codeWrapper">
             <h3>Code</h3>
+            <pre>
+function(state: any): { requestUrl: string, nextState?: any }) {
+            </pre>
             <pre id="code" class="editor">
-console.log(input);
+console.log(state);
 
-if (input.count <= 0) {
-    return { requestUrl: null };
+if (state.count >= 100) {
+    return null;
 }
 
+if (state.offset >= 1000) {
+    state.offset = 0;
+}
+
+var limit = 100;
+
 return {
-    requestUrl: baseUrl,
-    nextInput: {
-        count: --input.count
+    requestUrl: baseUrl + "?limit=" + limit + "&offset=" + state.offset,
+    nextState: {
+        offset: state.offset + limit,
+        count: state.count + 1
     }
 };
+            </pre>
+            <pre>
+}
             </pre>
         </div>
         <div id="inputWrapper">
             <h3>Input</h3>
-            <pre id="startInput" class="editor">
+            <pre id="startState" class="editor">
 {
-    "count": 10
+    "offset": 0,
+    "count": 0
 }
             </pre>
         </div>
         <div style="clear: both; margin: 1%">
-            <h3>Base Uri</h3>   <input type="text" id="baseUrl" style="width:1000px" /><br />
+            <h3>Base Urls</h3>   <textarea id="baseUrls" style="width:100%" rows="3"></textarea><br />
             <h3>Name</h3>       <input type="text" id="name" /><br /><br />
             <button id="createTest">Create Test</button>
         </div>
+        <div id="tests"></div>
         <!--<textarea id="output" rows="20" cols="200"></textarea>-->
     </div></body>
 </html>
