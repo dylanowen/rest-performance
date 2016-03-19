@@ -31,21 +31,23 @@ namespace Ajax {
         method?: METHOD
         url: string
         data?: any
+        timeout?: number
         callback?: (status: STATUS) => void
     }
 
-    export const TIMEOUT = 60 * 1000;
+    export const DEFAULT_TIMEOUT = 60 * 1000;
     
     export function request(settings: RequestObject): void {
         //set default settings
         setDefaults(settings, {
             method: METHOD.GET,
             data: null,
+            timeout: DEFAULT_TIMEOUT,
             callback: () => { }
         });
 
         const ajax = new XMLHttpRequest();
-        ajax.timeout = TIMEOUT;
+        ajax.timeout = settings.timeout;
         ajax.open(METHOD[settings.method], settings.url, true);
 
         ajax.onreadystatechange = () => {
