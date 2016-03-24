@@ -12,6 +12,14 @@ interface TransactionError {
     (ev: ErrorEvent, useCapture?: boolean): void
 }
 
+//a convenience interface to correctly type the version change event
+interface UpgradeEvent {
+    oldVersion: number,
+    db: IDBDatabase,
+    transaction: IDBTransaction,
+    request: IDBOpenDBRequest
+}
+
 class Database {
 
     protected openDb: DeferredAction;
@@ -37,16 +45,23 @@ class Database {
 
         openRequest.addEventListener('error', databaseLoadingError);
 
-        openRequest.addEventListener('upgradeneeded', (event: any) => {
-            const dbLink: IDBDatabase = event.target.result;
+        openRequest.addEventListener('upgradeneeded', (event: IDBVersionChangeEvent) => {
+            const request: IDBOpenDBRequest = <IDBOpenDBRequest>event.target;
 
-            dbLink.addEventListener('error', databaseLoadingError);
+            const upgrade: UpgradeEvent = {
+                oldVersion: event.oldVersion,
+                db: request.result,
+                transaction: request.transaction,
+                request: request
+            }
 
-            this.upgradeEvent(dbLink);
+            upgrade.db.addEventListener('error', databaseLoadingError);
+
+            this.upgradeEvent(upgrade);
         });
     }
 
-    protected upgradeEvent(dbLink: IDBDatabase): void {}
+    protected upgradeEvent(event: UpgradeEvent): void { }
 
     public write = this.databaseAction.bind(this, 'readwrite');
 

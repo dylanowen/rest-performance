@@ -1,27 +1,54 @@
-/// <reference path="./Ajax.ts"/>
+/// <reference path="./utility/Ajax.ts"/>
 
-interface GeneratorFunction {
-    (state: any): { requestUrl: string, nextState?: any };
+type State = any;
+
+interface TestSettings {
+    requestUrl?: string
+    nextState: State
+}
+
+interface StateFunction {
+    (state: State): TestSettings;
+}
+
+interface Generator<T> {
+    (): {
+        next(): {
+            value: T
+        }
+    }
 }
 
 class TestRunner {
     private output: HTMLTextAreaElement;
     private tOutput: HTMLTextAreaElement;
-    private generator: GeneratorFunction;
-    private initialState: any;
+    private threads: number;
 
     private inProgress: boolean = false;
-    private testStartTime: number;
-    private totalRuns: number;
+    private testResults: number[];
+    private stateGenerator: any;
+    private stateIterator: any;
 
-    public constructor(output: HTMLTextAreaElement, tOutput: HTMLTextAreaElement, generator: GeneratorFunction, initialState: any) {
+    public constructor(output: HTMLTextAreaElement, tOutput: HTMLTextAreaElement, userStateFunction: StateFunction, initialState: any) {
         this.output = output;
         this.tOutput = tOutput;
-        this.generator = generator;
-        this.initialState = initialState;
+
+        this.stateGenerator = function*(): any {
+            let settings: TestSettings = userStateFunction(initialState);
+            let state: State;
+
+            while (settings != null && settings.requestUrl != null && settings.requestUrl.length > 0) {
+                yield settings;
+
+                state = settings.nextState;
+                settings = userStateFunction(state);
+            } 
+
+            return null;
+        }
     }
 
-    public run(): void {
+    public run(threads: number = 1): void {
         if(this.inProgress) {
             console.error('Test already running');
 
@@ -29,35 +56,40 @@ class TestRunner {
         }
 
         this.start();
+        this.stateIterator = this.stateGenerator();
 
-        this.iterator(this.initialState)
+        for (let i = 0; i < threads; i++) {
+            this.iterator();
+        }
     }
 
-    private iterator(state: any): void {
-        const testSettings = this.generator(state);
+    private iterator(): void {
+        const testSettings = this.stateIterator.next().value;
 
-        if (!this.inProgress || testSettings == null || testSettings.requestUrl == null || testSettings.requestUrl.length == 0) {
-            this.end();
+        if (!this.inProgress || testSettings == null) {
+            this.end(); // this needs to be a join or something like that so I can keep track of each thread
             return;
         }
 
-        this.output.value += this.totalRuns + ': ' + testSettings.requestUrl + '\n';
+        const resultNumber = this.testResults.length;
+        this.output.value += resultNumber + ': ' + testSettings.requestUrl + '\n';
         const startTime = performance.now();
 
         Ajax.request({
+            method: testSettings.method,
             url: testSettings.requestUrl,
             callback: (status: Ajax.STATUS) => {
                 const totalTime = Math.round(performance.now() - startTime);
 
-                this.output.value += status + ':' + Ajax.STATUS[status] + ' -> ' + formatMs(totalTime) + '\n\n';
-                this.totalRuns++;
+                this.output.value += resultNumber + ': ' + status + ':' + Ajax.STATUS[status] + ' -> ' + formatMs(totalTime) + '\n\n';
+                this.tOutput.value += totalTime + '\n';
 
                 this.output.scrollTop = this.output.scrollHeight;
-
-                this.tOutput.value += totalTime + '\n';
                 this.tOutput.scrollTop = this.tOutput.scrollHeight;
 
-                this.iterator(testSettings.nextState);
+                this.testResults.push(totalTime);
+
+                this.iterator();
             }
         });
     }
@@ -66,8 +98,7 @@ class TestRunner {
         this.output.value = '';
         this.tOutput.value = '';
         this.inProgress = true;
-        this.totalRuns = 0;
-        this.testStartTime = performance.now();
+        this.testResults = [];
     }
 
     public stop(): void {
@@ -76,10 +107,10 @@ class TestRunner {
 
     private end(): void {
         this.stop();
-        const totalTime = Math.round(performance.now() - this.testStartTime);
-        const average = Math.round(totalTime / this.totalRuns);
+        const totalTime = this.testResults.reduce((prev: number, cur: number) => prev + cur);
+        const average = Math.round(totalTime / this.testResults.length);
 
-        this.output.value += 'Total Time: ' + formatMs(totalTime) + '\nTotal Requests: ' + this.totalRuns + '\nAverage: ' + formatMs(average);
+        this.output.value += 'Total Time: ' + formatMs(totalTime) + '\nTotal Requests: ' + this.testResults.length + '\nAverage: ' + formatMs(average);
 
         this.output.scrollTop = this.output.scrollHeight;
     }

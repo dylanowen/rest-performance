@@ -12,7 +12,7 @@ var config = {
     buildDest: 'build/',
     ts: {
         noImplicitAny: true,
-        //target: 'es6'
+        target: 'es6'
     }
 };
 

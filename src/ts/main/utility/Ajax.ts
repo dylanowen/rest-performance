@@ -19,16 +19,8 @@ namespace Ajax {
         CANCELED = 0
     }
 
-    export enum METHOD {
-        GET,
-        POST,
-        PUT,
-        PATCH,
-        DELETE,
-    }
-
     export interface RequestObject {
-        method?: METHOD
+        method?: string
         url: string
         data?: any
         timeout?: number
@@ -40,15 +32,16 @@ namespace Ajax {
     export function request(settings: RequestObject): void {
         //set default settings
         setDefaults(settings, {
-            method: METHOD.GET,
+            method: 'GET',
             data: null,
             timeout: DEFAULT_TIMEOUT,
             callback: () => { }
         });
+        settings.method = settings.method.toUpperCase();
 
         const ajax = new XMLHttpRequest();
         ajax.timeout = settings.timeout;
-        ajax.open(METHOD[settings.method], settings.url, true);
+        ajax.open(settings.method, settings.url, true);
 
         ajax.onreadystatechange = () => {
             if (ajax.readyState === 4) {
@@ -61,7 +54,7 @@ namespace Ajax {
             settings.callback(STATUS.CANCELED);
         }
 
-        if (settings.method !== METHOD.GET && settings.data !== null) {
+        if (settings.method !== 'GET' && settings.data !== null) {
             ajax.send(settings.data)
         }
         else {
@@ -70,8 +63,10 @@ namespace Ajax {
     }
 
     function setDefaults(original: SimpleObject, defaults: SimpleObject) {
+        console.log(original);
         for (var key in defaults) {
-            if (!(key in original)) {
+            console.log(key, key in original, typeof (original[key]));
+            if (!(key in original) || typeof(original[key]) == 'undefined') {
                 original[key] = <any>defaults[key]
             }
         }

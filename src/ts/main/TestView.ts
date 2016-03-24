@@ -17,11 +17,12 @@ class TestView {
             const baseUrls = result[TEST_DATABASE.BASE_URLS_KEY];
             const initialState = result[TEST_DATABASE.INITIAL_STATE_KEY];
             const name = result[TEST_DATABASE.NAME_KEY];
+            const threads = result[TEST_DATABASE.THREADS_KEY];
 
             try {
-                const stateGenerator = <GeneratorFunction>new Function('baseUrl', 'state', stateCode);
+                const stateGenerator = <StateFunction>new Function('baseUrl', 'state', stateCode);
 
-                this.setup(name, baseUrls, stateGenerator, initialState);
+                this.setup(name, baseUrls, stateGenerator, threads, initialState);
             }
             catch (e) {
                 console.error('How did you get here? ' + e);
@@ -29,7 +30,7 @@ class TestView {
         })
     }
 
-    private setup(name: string, baseUrls: string[], stateGeneratorBase: GeneratorFunction, initialState: any): void {
+    private setup(name: string, baseUrls: string[], stateGeneratorBase: StateFunction, threads: number, initialState: any): void {
         
 
         const h3: HTMLHeadingElement = document.createElement('h3');
@@ -69,11 +70,11 @@ class TestView {
         this.elmnt.appendChild(goButton);
 
         deleteButton.addEventListener('click', this.remove.bind(this));
-        goButton.addEventListener('click', this.run.bind(this));
+        goButton.addEventListener('click', this.run.bind(this, threads));
     }
 
-    private run(): void {
-        this.tests.forEach((test) => test.run());
+    private run(threads: number): void {
+        this.tests.forEach((test) => test.run(threads));
     }
 
 

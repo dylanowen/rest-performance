@@ -27,6 +27,7 @@ if (state.offset >= 1000) {
 var limit = 100;
 
 return {
+    method: 'GET',
     requestUrl: baseUrl + "?limit=" + limit + "&offset=" + state.offset,
     nextState: {
         offset: state.offset + limit,
@@ -39,7 +40,7 @@ return {
             </pre>
         </div>
         <div id="inputWrapper">
-            <h3>Input</h3>
+            <h3>Initial State</h3>
             <pre id="startState" class="editor">
 {
     "offset": 0,
@@ -49,7 +50,7 @@ return {
         </div>
         <div style="clear: both; margin: 1%">
             <h3>Base Urls</h3>   <textarea id="baseUrls" style="width:100%" rows="3"></textarea><br />
-            <h3>Name</h3>       <input type="text" id="name" /><br /><br />
+            <h3>Name</h3>       <input type="text" id="name" /> <h3>Threads</h3><input type="number" id="threads" value="1"/><br /><br />
             <button id="createTest">Create Test</button>
         </div>
         <div id="tests"></div>

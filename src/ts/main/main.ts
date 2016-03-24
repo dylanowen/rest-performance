@@ -21,9 +21,10 @@ const ready = (): void => {
 
     const baseUrlInput = <HTMLInputElement>document.getElementById('baseUrls');
     const nameInput = <HTMLInputElement>document.getElementById('name');
+    const threadsInput = <HTMLInputElement>document.getElementById('threads');
     const createTestButton = <HTMLButtonElement>document.getElementById('createTest');
 
-    new TestCreator(testContainer, codeEditor, inputEditor, baseUrlInput, nameInput, createTestButton);
+    new TestCreator(testContainer, codeEditor, inputEditor, baseUrlInput, nameInput, threadsInput, createTestButton);
 }
 
 if (document.readyState !== 'loading') {
