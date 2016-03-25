@@ -60,24 +60,36 @@ class TestView {
             this.tests.push(new TestRunner(textarea, tarea, stateGenerator, initialState));
         }
 
+        const startButton: HTMLButtonElement = document.createElement('button');
+        startButton.textContent = 'Start';
+        startButton.style.cssFloat = 'both';
+        this.elmnt.appendChild(startButton);
+        this.elmnt.appendChild(document.createTextNode(' '));
+
+        const stopButton: HTMLButtonElement = document.createElement('button');
+        stopButton.textContent = 'Stop';
+        stopButton.style.cssFloat = 'both';
+        this.elmnt.appendChild(stopButton);
+        this.elmnt.appendChild(document.createTextNode('\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0'));
+
         const deleteButton: HTMLButtonElement = document.createElement('button');
         deleteButton.textContent = 'Delete';
         deleteButton.style.cssFloat = 'both';
         this.elmnt.appendChild(deleteButton);
-
-        const goButton: HTMLButtonElement = document.createElement('button');
-        goButton.textContent = 'Go';
-        deleteButton.style.cssFloat = 'both';
-        this.elmnt.appendChild(goButton);
-
+        
+        startButton.addEventListener('click', this.run.bind(this, threads));
+        stopButton.addEventListener('click', this.stop.bind(this));
         deleteButton.addEventListener('click', this.remove.bind(this));
-        goButton.addEventListener('click', this.run.bind(this, threads));
+        
     }
 
     private run(threads: number): void {
         this.tests.forEach((test) => test.run(threads));
     }
 
+    private stop(): void {
+        this.tests.forEach((test) => test.stop());
+    }
 
     private remove(): void {
         this.tests.forEach((test) => test.stop());
