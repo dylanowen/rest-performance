@@ -1,3 +1,4 @@
+/// <reference path="./TestDatabase.ts"/>
 /// <reference path="./TestRunner.ts"/>
 
 class TestView {
@@ -46,13 +47,13 @@ class TestView {
             const textarea: HTMLTextAreaElement = document.createElement('textarea');
             textarea.className = 'output'
             textarea.style.width = '78%';
-            textarea.style.cssFloat = 'right';
+            textarea.style.cssFloat = 'left';
             this.elmnt.appendChild(textarea);
 
             const tarea: HTMLTextAreaElement = document.createElement('textarea');
             tarea.className = 'output'
             tarea.style.width = '18%';
-            textarea.style.cssFloat = 'left';
+            tarea.style.cssFloat = 'right';
             this.elmnt.appendChild(tarea);
 
             const stateGenerator = stateGeneratorBase.bind(null, url);
@@ -102,7 +103,7 @@ class TestView {
             const request: IDBRequest = testsStore.get(this.dbIndex);
 
             request.addEventListener('success', (event: Event) => {
-                console.log(request, request.result);
+                //console.log(request, request.result);
 
                 callback(request.result);
             });

@@ -1,6 +1,6 @@
 /// <reference path="../types/chrome/chrome.d.ts"/>
 
-/// <reference path="./utility/Debounce.ts"/>
+/// <reference path="../util/Debounce.ts"/>
 
 /// <reference path="./TestDatabase.ts"/>
 /// <reference path="./TestView.ts"/>

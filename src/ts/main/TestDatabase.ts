@@ -1,4 +1,4 @@
-/// <reference path="./utility/Database.ts"/>
+/// <reference path="../util/Database.ts"/>
 
 const TEST_DATABASE = new (class TestDatabase extends Database {
 

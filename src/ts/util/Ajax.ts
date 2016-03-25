@@ -55,7 +55,7 @@ namespace Ajax {
         }
 
         if (settings.method !== 'GET' && settings.data !== null) {
-            ajax.send(settings.data)
+            ajax.send(JSON.stringify(settings.data));
         }
         else {
             ajax.send();
@@ -63,9 +63,9 @@ namespace Ajax {
     }
 
     function setDefaults(original: SimpleObject, defaults: SimpleObject) {
-        console.log(original);
+        //console.log(original);
         for (var key in defaults) {
-            console.log(key, key in original, typeof (original[key]));
+            //console.log(key, key in original, typeof (original[key]));
             if (!(key in original) || typeof(original[key]) == 'undefined') {
                 original[key] = <any>defaults[key]
             }

@@ -35,8 +35,9 @@ function typescript(outputName) {
 }
 
 gulp.task('build:ts:main', typescript.bind(null, 'main'));
+gulp.task('build:ts:worker', typescript.bind(null, 'worker'));
 gulp.task('build:ts', function(cb) {
-    runSequence(['build:ts:main'], cb);
+    runSequence(['build:ts:main', 'build:ts:worker'], cb);
 });
 gulp.task('build', function(cb) {
     runSequence('clean', ['build:static', 'build:ts'], cb);
