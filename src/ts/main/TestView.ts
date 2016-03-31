@@ -21,9 +21,7 @@ class TestView {
             const threads = result[TEST_DATABASE.THREADS_KEY];
 
             try {
-                const stateGenerator = <StateFunction>new Function('baseUrl', 'state', stateCode);
-
-                this.setup(name, baseUrls, stateGenerator, threads, initialState);
+                this.setup(name, baseUrls, stateCode, threads, initialState);
             }
             catch (e) {
                 console.error('How did you get here? ' + e);
@@ -31,56 +29,110 @@ class TestView {
         })
     }
 
-    private setup(name: string, baseUrls: string[], stateGeneratorBase: StateFunction, threads: number, initialState: any): void {
-        
+    private setup(name: string, baseUrls: string[], stateCode: string, threads: number, initialState: any): void {
+        const stateGeneratorBase = <StateFunction>new Function('baseUrl', 'state', stateCode);
 
+        //setup the header
         const h3: HTMLHeadingElement = document.createElement('h3');
-        h3.textContent = name;
+        h3.textContent = name + ' ';
+        const sourceButton: HTMLButtonElement = document.createElement('button');
+        sourceButton.textContent = 'Source';
+        h3.appendChild(sourceButton);
+
         this.elmnt.appendChild(h3);
 
+        //setup the main view
+        const mainViewDiv = document.createElement('div');
         for (let url of baseUrls) {
             const p: HTMLParagraphElement = document.createElement('p');
             p.className = 'url_title'
             p.textContent = url;
-            this.elmnt.appendChild(p);
+            mainViewDiv.appendChild(p);
 
             const textarea: HTMLTextAreaElement = document.createElement('textarea');
             textarea.className = 'output'
             textarea.style.width = '78%';
             textarea.style.cssFloat = 'left';
-            this.elmnt.appendChild(textarea);
+            mainViewDiv.appendChild(textarea);
 
             const tarea: HTMLTextAreaElement = document.createElement('textarea');
             tarea.className = 'output'
             tarea.style.width = '18%';
             tarea.style.cssFloat = 'right';
-            this.elmnt.appendChild(tarea);
+            mainViewDiv.appendChild(tarea);
 
             const stateGenerator = stateGeneratorBase.bind(null, url);
             this.tests.push(new TestRunner(textarea, tarea, stateGenerator, initialState));
         }
+        this.elmnt.appendChild(mainViewDiv);
+
+        //setup the source view
+        const sourceViewDiv = document.createElement('div');
+        sourceViewDiv.style.display = 'none';
+
+        const sourceView = document.createElement('pre');
+        sourceView.className = 'editor codeWrapper';
+        sourceView.textContent = stateCode;
+        sourceViewDiv.appendChild(sourceView);
+
+        const inputView = document.createElement('pre');
+        inputView.className = 'editor inputWrapper';
+        let initialSource: any;
+        try {
+            initialSource = JSON.stringify(initialState);
+        }
+        catch(e) {
+            initialSource = initialState;
+        }
+        inputView.textContent = initialSource;
+        sourceViewDiv.appendChild(inputView);
+
+        this.elmnt.appendChild(sourceViewDiv);
+
+        //setup the footer
+        const footer: HTMLDivElement = document.createElement('div');
+        footer.style.clear = 'both';
 
         const startButton: HTMLButtonElement = document.createElement('button');
         startButton.textContent = 'Start';
-        startButton.style.cssFloat = 'both';
-        this.elmnt.appendChild(startButton);
-        this.elmnt.appendChild(document.createTextNode(' '));
+        footer.appendChild(startButton);
+        footer.appendChild(document.createTextNode(' '));
 
         const stopButton: HTMLButtonElement = document.createElement('button');
         stopButton.textContent = 'Stop';
-        stopButton.style.cssFloat = 'both';
-        this.elmnt.appendChild(stopButton);
-        this.elmnt.appendChild(document.createTextNode('\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0'));
+        footer.appendChild(stopButton);
+        footer.appendChild(document.createTextNode('\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0'));
 
         const deleteButton: HTMLButtonElement = document.createElement('button');
         deleteButton.textContent = 'Delete';
-        deleteButton.style.cssFloat = 'both';
-        this.elmnt.appendChild(deleteButton);
+        footer.appendChild(deleteButton);
+
+        this.elmnt.appendChild(footer);
         
+        let codeViewerReady = false;
+        sourceButton.addEventListener('click', () => {
+            if (sourceViewDiv.style.display == 'none') {
+                if (codeViewerReady === false) {
+                    const codeViewer: any = ace.edit(sourceView);
+                    codeViewer.setTheme('ace/theme/solarized_dark');
+                    codeViewer.getSession().setMode('ace/mode/javascript');
+
+                    const inputViewer: any = ace.edit(inputView);
+                    inputViewer.setTheme('ace/theme/solarized_dark');
+                    inputViewer.getSession().setMode('ace/mode/javascript');
+                }
+
+                mainViewDiv.style.display = 'none';
+                sourceViewDiv.style.display = '';
+            }
+            else {
+                mainViewDiv.style.display = '';
+                sourceViewDiv.style.display = 'none';
+            }
+        });
         startButton.addEventListener('click', this.run.bind(this, threads));
         stopButton.addEventListener('click', this.stop.bind(this));
         deleteButton.addEventListener('click', this.remove.bind(this));
-        
     }
 
     private run(threads: number): void {

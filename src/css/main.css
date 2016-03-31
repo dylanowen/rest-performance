@@ -3,12 +3,12 @@
     margin: auto;
 }
 
-#codeWrapper {
+.codeWrapper {
     width: 68%;
     float: left;
 }
 
-#inputWrapper {
+.inputWrapper {
     width: 28%;
     float: right;
 }
