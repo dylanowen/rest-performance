@@ -91,7 +91,7 @@ class TestRunner {
         const resultIndex = this.testResults.length;
         this.testResults.push(null);//reserve our spot in the array
 
-        this.output.value = resultIndex + '';
+        this.output.value = (resultIndex + 1) + '';
 
         //this is ok because we're always executing these in order
         thread.worker.onmessage = (e:MessageEvent): void => {
