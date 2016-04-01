@@ -1,6 +1,10 @@
 /// <reference path="./TestDatabase.ts"/>
 /// <reference path="./TestRunner.ts"/>
 
+interface TestGeneratorGetter {
+    (baseUrl: string): TestGenerator
+}
+
 class TestView {
     public elmnt: HTMLElement;
 
@@ -14,14 +18,15 @@ class TestView {
 
         //read the data out of the database
         this.getTestObject((result: any) => {
-            const stateCode = result[TEST_DATABASE.STATE_CODE_KEY];
+            const generatorCode = result[TEST_DATABASE.GENERATOR_CODE];
             const baseUrls = result[TEST_DATABASE.BASE_URLS_KEY];
-            const initialState = result[TEST_DATABASE.INITIAL_STATE_KEY];
             const name = result[TEST_DATABASE.NAME_KEY];
             const threads = result[TEST_DATABASE.THREADS_KEY];
 
+            console.log(result);
+
             try {
-                this.setup(name, baseUrls, stateCode, threads, initialState);
+                this.setup(name, baseUrls, generatorCode, threads);
             }
             catch (e) {
                 console.error('How did you get here? ' + e);
@@ -29,8 +34,8 @@ class TestView {
         })
     }
 
-    private setup(name: string, baseUrls: string[], stateCode: string, threads: number, initialState: any): void {
-        const stateGeneratorBase = <StateFunction>new Function('baseUrl', 'state', stateCode);
+    private setup(name: string, baseUrls: string[], generatorCode: string, threads: number): void {
+        const testGeneratorGetter = <TestGeneratorGetter>new Function('baseUrl', generatorCode);
 
         //setup the header
         const h3: HTMLHeadingElement = document.createElement('h3');
@@ -61,8 +66,7 @@ class TestView {
             tarea.style.cssFloat = 'right';
             mainViewDiv.appendChild(tarea);
 
-            const stateGenerator = stateGeneratorBase.bind(null, url);
-            this.tests.push(new TestRunner(textarea, tarea, stateGenerator, initialState));
+            this.tests.push(new TestRunner(textarea, tarea, testGeneratorGetter(url)));
         }
         this.elmnt.appendChild(mainViewDiv);
 
@@ -71,21 +75,9 @@ class TestView {
         sourceViewDiv.style.display = 'none';
 
         const sourceView = document.createElement('pre');
-        sourceView.className = 'editor codeWrapper';
-        sourceView.textContent = stateCode;
+        sourceView.className = 'editor';
+        sourceView.textContent = generatorCode;
         sourceViewDiv.appendChild(sourceView);
-
-        const inputView = document.createElement('pre');
-        inputView.className = 'editor inputWrapper';
-        let initialSource: any;
-        try {
-            initialSource = JSON.stringify(initialState);
-        }
-        catch(e) {
-            initialSource = initialState;
-        }
-        inputView.textContent = initialSource;
-        sourceViewDiv.appendChild(inputView);
 
         this.elmnt.appendChild(sourceViewDiv);
 
@@ -116,10 +108,6 @@ class TestView {
                     const codeViewer: any = ace.edit(sourceView);
                     codeViewer.setTheme('ace/theme/solarized_dark');
                     codeViewer.getSession().setMode('ace/mode/javascript');
-
-                    const inputViewer: any = ace.edit(inputView);
-                    inputViewer.setTheme('ace/theme/solarized_dark');
-                    inputViewer.getSession().setMode('ace/mode/javascript');
                 }
 
                 mainViewDiv.style.display = 'none';

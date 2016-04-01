@@ -14,8 +14,6 @@ onmessage = (e: MessageEvent) => {
         const testSettings: TestSettings = e.data;
 
         const result: TestResult = {
-            threadId: workerId,
-            url: testSettings.requestUrl,
             status: Ajax.STATUS.CANCELED,
             time: -1,
         }
@@ -23,7 +21,7 @@ onmessage = (e: MessageEvent) => {
         const startTime = performance.now();
         Ajax.request({
             method: testSettings.method,
-            url: testSettings.requestUrl,
+            url: testSettings.url,
             data: testSettings.data,
             callback: (status: Ajax.STATUS) => {
                 result.time = performance.now() - startTime;

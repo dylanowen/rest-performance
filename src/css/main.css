@@ -3,16 +3,6 @@
     margin: auto;
 }
 
-.codeWrapper {
-    width: 68%;
-    float: left;
-}
-
-.inputWrapper {
-    width: 28%;
-    float: right;
-}
-
 .editor { 
     height: 300px;
 }

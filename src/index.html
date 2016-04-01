@@ -8,46 +8,42 @@
         <script src="ace/ace.js" type="text/javascript" charset="utf-8"></script>
     </head>
     <body><div id="wrapper">
-        <div class="codeWrapper">
-            <h3>Code</h3>
-            <pre>
-function(state: any): { requestUrl: string, nextState?: any }) {
-            </pre>
-            <pre id="code" class="editor">
-console.log(state);
-
-if (state.count >= 100) {
-    return null;
-}
-
-if (state.offset >= 1000) {
-    state.offset = 0;
-}
-
+        <h3>Code</h3>
+        <pre>
+function(requestUrl: string): () => Iterable<{method?: string, requestUrl: string,data?: any}> {
+        </pre>
+        <pre id="code" class="editor">
+var total = 1000;
 var limit = 100;
 
-return {
-    method: 'GET',
-    requestUrl: baseUrl + "?limit=" + limit + "&offset=" + state.offset,
-    nextState: {
-        offset: state.offset + limit,
-        count: state.count + 1
+var readData = function*() {
+    for (var i = 0; i < total; i += limit) {
+        yield {
+            method: 'GET',
+            url: baseUrl + '?limit=' + limit + '&offset=' + i
+        };
     }
 };
-            </pre>
-            <pre>
+
+return function*() {
+    for (var i = 0; i < total; i++) {
+        yield {
+            method: 'POST',
+            url: baseUrl,
+            data: {
+                testAmount: 100.1,
+                name: 'test name',
+                boolean: false
+            }
+        };
+    }
+
+    yield* readData();
+};
+        </pre>
+        <pre>
 }
-            </pre>
-        </div>
-        <div class="inputWrapper">
-            <h3>Initial State</h3>
-            <pre id="startState" class="editor">
-{
-    "offset": 0,
-    "count": 0
-}
-            </pre>
-        </div>
+        </pre>
         <div style="clear: both; margin: 1%">
             <h3>Base Urls</h3>   <textarea id="baseUrls" style="width:100%" rows="3"></textarea><br />
             <h3>Name</h3>       <input type="text" id="name" /> <h3>Threads</h3><input type="number" id="threads" value="1"/><br /><br />

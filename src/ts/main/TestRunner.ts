@@ -2,22 +2,19 @@
 
 /// <reference path="../util/Ajax.ts"/>
 
-type State = any;
-
-interface TestSettingsState extends TestSettings {
-    nextState: State
+interface TestGenerator {
+    (): Iterable<TestSettings>
 }
 
-interface StateFunction {
-    (state: State): TestSettingsState;
+interface VerboseTestResults extends TestResult {
+    threadId: number,
+    url: string,
+    method: string
 }
 
-interface Generator<T> {
-    (): {
-        next(): {
-            value: T
-        }
-    }
+interface Thread {
+    worker: Worker,
+    id: number
 }
 
 class TestRunner {
@@ -25,32 +22,17 @@ class TestRunner {
     private tOutput: HTMLTextAreaElement;
 
     private inProgress: boolean = false;
-    private workers: Worker[];
-    private testResults: TestResult[];
+    private threads: Thread[];
+    private testResults: VerboseTestResults[];
     private testStartTime: number;
-    private stateGenerator: any;
-    private stateIterator: any;
+    private testGenerator: TestGenerator;
+    private testIterator: any;
 
-    public constructor(output: HTMLTextAreaElement, tOutput: HTMLTextAreaElement, userStateFunction: StateFunction, initialState: any) {
+    public constructor(output: HTMLTextAreaElement, tOutput: HTMLTextAreaElement, testGenerator: TestGenerator) {
         this.output = output;
         this.tOutput = tOutput;
 
-        this.stateGenerator = function*(): IterableIterator<TestSettings> {
-            let settings: TestSettingsState = userStateFunction(initialState);
-            let state: State;
-
-            while (settings != null && settings.requestUrl != null && settings.requestUrl.length > 0) {
-                const yieldedSettings: TestSettingsState = JSON.parse(JSON.stringify(settings));
-                delete yieldedSettings.nextState
-
-                yield yieldedSettings;
-
-                state = settings.nextState;
-                settings = userStateFunction(state);
-            } 
-
-            return null;
-        }
+        this.testGenerator = testGenerator;
     }
 
     public run(threads: number = 1): void {
@@ -75,28 +57,31 @@ class TestRunner {
         for (let i = 0; i < threads; i++) {
             const worker = new Worker('js/worker.js');
 
-            worker.onmessage = this.startWorker.bind(this, joiner);
+            const thread: Thread = {
+                worker: worker,
+                id: i
+            };
+
+            worker.onmessage = this.startWorker.bind(this, thread, joiner);
 
             worker.postMessage(i);
 
-            this.workers.push(worker);
+            this.threads.push(thread);
         }
     }
 
-    private startWorker(callback: Function, e: MessageEvent): void {
+    private startWorker(thread: Thread, callback: Function, e: MessageEvent): void {
         if (e.data != true) {
             throw 'Invalid worker bootup response: ' + e;
         }
-        const worker: Worker = <Worker>e.target;
-
-        console.log(e);
+        //console.log(e);
 
         //kick off the worker iteration
-        this.iterateWorker(worker, callback)
+        this.iterateWorker(thread, callback)
     }
 
-    private iterateWorker(worker: Worker, callback: Function): void {
-        const testSettings: TestSettingsState = this.stateIterator.next().value;
+    private iterateWorker(thread: Thread, callback: Function): void {
+        const testSettings: TestSettings = this.testIterator.next().value;
 
         if (!this.inProgress || testSettings == null) {
             callback();
@@ -109,61 +94,32 @@ class TestRunner {
         this.output.value = resultIndex + '';
 
         //this is ok because we're always executing these in order
-        worker.onmessage = (e:MessageEvent): void => {
+        thread.worker.onmessage = (e:MessageEvent): void => {
             const result: TestResult = e.data;
 
-            this.testResults[resultIndex] = result;
+            this.testResults[resultIndex] = {
+                status: result.status,
+                time: result.time,
+                threadId: thread.id,
+                url: testSettings.url,
+                method: testSettings.method
+            };
 
-            this.iterateWorker(worker, callback);
+            this.iterateWorker(thread, callback);
         }
 
         //send the job to the worker
-        worker.postMessage(testSettings);
+        thread.worker.postMessage(testSettings);
     }
-
-/*
-    private iterator(threadId: number): void {
-        const testSettings: TestSettingsState = this.stateIterator.next().value;
-
-
-
-        if (!this.inProgress || testSettings == null) {
-            this.end(); // this needs to be a join or something like that so I can keep track of each thread
-            return;
-        }
-
-        const result: TestResult = {
-            threadId: threadId,
-            url: testSettings.requestUrl,
-            status: Ajax.STATUS.CANCELED,
-            time: -1,
-        }
-        this.testResults.push(result);
-        this.output.value = this.testResults.length + '';
-
-        const startTime = performance.now();
-        Ajax.request({
-            method: testSettings.method,
-            url: testSettings.requestUrl,
-            data: testSettings.data,
-            callback: (status: Ajax.STATUS) => {
-                result.time = performance.now() - startTime;
-                result.status = status;
-
-                this.iterator(threadId);
-            }
-        });
-    }
-    */
 
     private prepareTest(): void {
         this.output.value = '';
         this.tOutput.value = '';
         this.inProgress = true;
-        this.workers = [];
+        this.threads = [];
         this.testResults = [];
         this.testStartTime = performance.now();
-        this.stateIterator = this.stateGenerator();
+        this.testIterator = this.testGenerator();
     }
 
     public stop(): void {
@@ -173,8 +129,8 @@ class TestRunner {
     private end(): void {
         this.stop();
 
-        const threads = this.workers.length;
-        this.workers.forEach((worker: Worker): void => { worker.terminate() });
+        const threads = this.threads.length;
+        this.threads.forEach((thread: Thread): void => { thread.worker.terminate() });
 
         let threadTimes: number[] = [];
         for (let i = 0; i < threads; i++) {
@@ -183,7 +139,7 @@ class TestRunner {
         let output = '';
         let tOutput = '';
         for (let result of this.testResults) {
-            output += result.threadId + ': ' + result.url + '\n' + result.status + ' -> ' + formatMs(result.time) + '\n\n';
+            output += result.threadId + ' -> ' + result.method + ':' + result.url + '\n' + result.status + ' -> ' + formatMs(result.time) + '\n\n';
             tOutput += result.time + '\n';
             threadTimes[result.threadId] += result.time;
         }

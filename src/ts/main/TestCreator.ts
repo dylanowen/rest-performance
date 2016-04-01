@@ -8,16 +8,14 @@
 class TestCreator {
     private testContainer: HTMLElement;
     private codeInput: any;
-    private stateInput: any;
     private baseUrlInput: HTMLInputElement;
     private nameInput: HTMLInputElement;
     private threadsInput: HTMLInputElement;
 
     //http://jsfiddle.net/bzwheeler/btsxgena/
-    public constructor(testsContainer: HTMLElement, codeInput: any, stateInput: any, baseUrlInput: HTMLInputElement, nameInput: HTMLInputElement, threadsInput: HTMLInputElement, createTestButton: HTMLButtonElement) {
+    public constructor(testsContainer: HTMLElement, codeInput: any, baseUrlInput: HTMLInputElement, nameInput: HTMLInputElement, threadsInput: HTMLInputElement, createTestButton: HTMLButtonElement) {
         this.testContainer = testsContainer;
         this.codeInput = codeInput;
-        this.stateInput = stateInput;
         this.baseUrlInput = baseUrlInput;
         this.nameInput = nameInput;
         this.threadsInput = threadsInput;
@@ -26,31 +24,18 @@ class TestCreator {
 
         createTestButton.addEventListener('click', this.createTestHandler.bind(this));
 
-
-
         this.codeInput.on('change', this.saveState.bind(this));
-        this.stateInput.on('change', this.saveState.bind(this));
     }
 
     private createTestHandler(): void {
         const stateCode = this.codeInput.getValue();
-        const state = this.stateInput.getValue();
         const baseUrls = this.baseUrlInput.value.split('\n').map((url) => url.trim()).filter((url) => url.length > 0);
         const name = this.nameInput.value;
         const threads = parseInt(this.threadsInput.value);
 
         //validate the state function
         if (this.validateFunction(stateCode)) {
-            //try to parse the json state
-            let initialState: any;
-            try {
-                initialState = JSON.parse(state);
-            }
-            catch (e) {
-                initialState = state;
-            }
-
-            this.createTest(name, baseUrls, stateCode, threads, initialState);
+            this.createTest(name, baseUrls, stateCode, threads);
         }
         else {
             alert('Bad Code, check the logs for more info');
@@ -59,8 +44,8 @@ class TestCreator {
         //console.log(code, state, baseUrl, name);
     }
 
-    private createTest(name: string, baseUrls: string[], stateCode: string, threads: number, initialState: any): void {
-        this.saveTest(name, baseUrls, stateCode, threads, initialState, this.displayTest.bind(this));
+    private createTest(name: string, baseUrls: string[], generatorCode: string, threads: number): void {
+        this.saveTest(name, baseUrls, generatorCode, threads, this.displayTest.bind(this));
     }
 
     private displayTest(index: number): void {
@@ -69,13 +54,12 @@ class TestCreator {
         this.testContainer.insertBefore(test.elmnt, this.testContainer.firstChild);
     }
 
-    private saveTest(name: string, baseUrls: string[], stateCode: string, threads: number, initialState: any, callback: (index: number) => void): void {
+    private saveTest(name: string, baseUrls: string[], generatorCode: string, threads: number, callback: (index: number) => void): void {
         const testObject = {
             [TEST_DATABASE.NAME_KEY]: name,
             [TEST_DATABASE.BASE_URLS_KEY]: baseUrls,
-            [TEST_DATABASE.STATE_CODE_KEY]: stateCode,
+            [TEST_DATABASE.GENERATOR_CODE]: generatorCode,
             [TEST_DATABASE.THREADS_KEY]: threads,
-            [TEST_DATABASE.INITIAL_STATE_KEY]: initialState,
             [TEST_DATABASE.DELETED_KEY]: false
         }
 
@@ -93,8 +77,7 @@ class TestCreator {
     private saveState = Debounce((e: any) => {
         const stateObject = {
             [TEST_DATABASE.STATE_PATH]: "default",
-            [TEST_DATABASE.STATE_CODE_KEY]: this.codeInput.getValue(),
-            [TEST_DATABASE.INITIAL_STATE_KEY]: this.stateInput.getValue(),
+            [TEST_DATABASE.GENERATOR_CODE]: this.codeInput.getValue(),
             [TEST_DATABASE.BASE_URLS_KEY]: this.baseUrlInput.value.split('\n').map((url) => url.trim()).filter((url) => url.length > 0)
         }
 
@@ -107,7 +90,7 @@ class TestCreator {
 
     private validateFunction(code: string): boolean {
         try {
-            const stateGenerator = new Function('baseUrl', 'state', code);
+            const stateGenerator = new Function('baseUrl', code);
         }
         catch(e) {
             console.error(e);
@@ -133,7 +116,7 @@ class TestCreator {
 
                     cursor.continue();
                 }
-            })
+            });
         });
 
         TEST_DATABASE.read(TEST_DATABASE.STATE_STORE_KEY, (tr: IDBTransaction) => {
