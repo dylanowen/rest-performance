@@ -34,10 +34,12 @@ function typescript(outputName) {
         .pipe(gulp.dest(config.buildDest));
 }
 
+gulp.task('build:ts:background', typescript.bind(null, 'background'));
+gulp.task('build:ts:sandbox', typescript.bind(null, 'sandbox'));
 gulp.task('build:ts:main', typescript.bind(null, 'main'));
 gulp.task('build:ts:worker', typescript.bind(null, 'worker'));
 gulp.task('build:ts', function(cb) {
-    runSequence(['build:ts:main', 'build:ts:worker'], cb);
+    runSequence(['build:ts:background', 'build:ts:sandbox', 'build:ts:main', 'build:ts:worker'], cb);
 });
 gulp.task('build', function(cb) {
     runSequence('clean', ['build:static', 'build:ts'], cb);

@@ -1,13 +1,15 @@
 /// <reference path="./TestCreator.ts"/>
-
-interface RequestDef {
-    count: number
-}
+/// <reference path="./Sandbox.ts"/>
 
 declare var ace: any;
 
+//global
+let SANDBOX_HANDLER: SandboxHandler = null;
+
 const ready = (): void => {
     console.log('ready');
+
+    SANDBOX_HANDLER = new SandboxHandler('sandbox');
 
     const testContainer: HTMLElement = document.getElementById('tests');
 

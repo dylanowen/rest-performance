@@ -34,14 +34,14 @@ class TestCreator {
         const threads = parseInt(this.threadsInput.value);
 
         //validate the state function
-        if (this.validateFunction(stateCode)) {
-            this.createTest(name, baseUrls, stateCode, threads);
-        }
-        else {
-            alert('Bad Code, check the logs for more info');
-        }
-
-        //console.log(code, state, baseUrl, name);
+        SANDBOX_HANDLER.isGeneratorValid(stateCode, (valid: boolean) => {
+            if (valid) {
+                this.createTest(name, baseUrls, stateCode, threads);
+            }
+            else {
+                alert('Bad Code, check the logs for more info');
+            }
+        });
     }
 
     private createTest(name: string, baseUrls: string[], generatorCode: string, threads: number): void {
@@ -87,19 +87,6 @@ class TestCreator {
             const request: IDBRequest = stateStore.put(stateObject);
         });
     }, 1000);
-
-    private validateFunction(code: string): boolean {
-        try {
-            const stateGenerator = new Function('baseUrl', code);
-        }
-        catch(e) {
-            console.error(e);
-
-            return false;
-        }
-
-        return true;
-    }
 
     private loadFromDatabase(): void {
         TEST_DATABASE.read(TEST_DATABASE.TESTS_STORE_KEY, (tr: IDBTransaction) => {

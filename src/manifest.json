@@ -1,12 +1,18 @@
 {
     "name": "Rest Performance",
     "description": "",
-    "version": "0.1",
+    "version": "0.2",
     "minimum_chrome_version": "39",
     "manifest_version": 2,
-    "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'",
     "permissions": [
-        "<all_urls>",
-        "storage"
-    ]
+        "<all_urls>"
+    ],
+    "app": {
+        "background": {
+            "scripts": ["js/background.js"]
+        }
+    },
+    "sandbox": {
+        "pages": ["sandbox.html"]
+    }
 }

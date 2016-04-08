@@ -2,8 +2,12 @@
 
 /// <reference path="../util/Ajax.ts"/>
 
-interface TestGenerator {
-    (): Iterable<TestSettings>
+interface TestIteratorGetter {
+    (callback: (testIterator: TestIterator) => void): void
+}
+
+interface TestIterator {
+    (callback: (testSettings: TestSettings) => void): void
 }
 
 interface VerboseTestResults extends TestResult {
@@ -25,14 +29,14 @@ class TestRunner {
     private threads: Thread[];
     private testResults: VerboseTestResults[];
     private testStartTime: number;
-    private testGenerator: TestGenerator;
-    private testIterator: any;
+    private testIteratorGetter: TestIteratorGetter;
+    private testIterator: TestIterator;
 
-    public constructor(output: HTMLTextAreaElement, tOutput: HTMLTextAreaElement, testGenerator: TestGenerator) {
+    public constructor(output: HTMLTextAreaElement, tOutput: HTMLTextAreaElement, testIteratorGetter: TestIteratorGetter) {
         this.output = output;
         this.tOutput = tOutput;
 
-        this.testGenerator = testGenerator;
+        this.testIteratorGetter = testIteratorGetter;
     }
 
     public run(threads: number = 1): void {
@@ -42,32 +46,32 @@ class TestRunner {
             return;
         }
         
-        this.prepareTest();
-        
-        var finishedThreads = 0;
+        this.prepareTest((): void => {
+            var finishedThreads = 0;
 
-        const joiner = (): void => {
-            finishedThreads++;
+            const joiner = (): void => {
+                finishedThreads++;
 
-            if (finishedThreads >= threads) {
-                this.end();
+                if (finishedThreads >= threads) {
+                    this.end();
+                }
             }
-        }
 
-        for (let i = 0; i < threads; i++) {
-            const worker = new Worker('js/worker.js');
+            for (let i = 0; i < threads; i++) {
+                const worker = new Worker('js/worker.js');
 
-            const thread: Thread = {
-                worker: worker,
-                id: i
-            };
+                const thread: Thread = {
+                    worker: worker,
+                    id: i
+                };
 
-            worker.onmessage = this.startWorker.bind(this, thread, joiner);
+                worker.onmessage = this.startWorker.bind(this, thread, joiner);
 
-            worker.postMessage(i);
+                worker.postMessage(i);
 
-            this.threads.push(thread);
-        }
+                this.threads.push(thread);
+            }
+        });
     }
 
     private startWorker(thread: Thread, callback: Function, e: MessageEvent): void {
@@ -81,45 +85,49 @@ class TestRunner {
     }
 
     private iterateWorker(thread: Thread, callback: Function): void {
-        const testSettings: TestSettings = this.testIterator.next().value;
+        this.testIterator((testSettings: TestSettings) => {
+            if (!this.inProgress || testSettings == null) {
+                callback();
+                return;
+            }
 
-        if (!this.inProgress || testSettings == null) {
-            callback();
-            return;
-        }
+            const resultIndex = this.testResults.length;
+            this.testResults.push(null);//reserve our spot in the array
 
-        const resultIndex = this.testResults.length;
-        this.testResults.push(null);//reserve our spot in the array
+            this.output.value = (resultIndex + 1) + '';
 
-        this.output.value = (resultIndex + 1) + '';
+            //this is ok because we're always executing these in order
+            thread.worker.onmessage = (e: MessageEvent): void => {
+                const result: TestResult = e.data;
 
-        //this is ok because we're always executing these in order
-        thread.worker.onmessage = (e:MessageEvent): void => {
-            const result: TestResult = e.data;
+                this.testResults[resultIndex] = {
+                    status: result.status,
+                    time: result.time,
+                    threadId: thread.id,
+                    url: testSettings.url,
+                    method: testSettings.method
+                };
 
-            this.testResults[resultIndex] = {
-                status: result.status,
-                time: result.time,
-                threadId: thread.id,
-                url: testSettings.url,
-                method: testSettings.method
-            };
+                this.iterateWorker(thread, callback);
+            }
 
-            this.iterateWorker(thread, callback);
-        }
-
-        //send the job to the worker
-        thread.worker.postMessage(testSettings);
+            //send the job to the worker
+            thread.worker.postMessage(testSettings);
+        });
     }
 
-    private prepareTest(): void {
+    private prepareTest(callback: () => void): void {
         this.output.value = '';
         this.tOutput.value = '';
         this.inProgress = true;
         this.threads = [];
         this.testResults = [];
         this.testStartTime = performance.now();
-        this.testIterator = this.testGenerator();
+        this.testIteratorGetter((testIterator: TestIterator) => {
+            this.testIterator = testIterator;
+
+            callback();
+        });
     }
 
     public stop(): void {

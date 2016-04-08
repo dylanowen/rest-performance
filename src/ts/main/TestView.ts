@@ -1,9 +1,6 @@
 /// <reference path="./TestDatabase.ts"/>
 /// <reference path="./TestRunner.ts"/>
-
-interface TestGeneratorGetter {
-    (baseUrl: string): TestGenerator
-}
+/// <reference path="./Sandbox.ts"/>
 
 class TestView {
     public elmnt: HTMLElement;
@@ -23,19 +20,14 @@ class TestView {
             const name = result[TEST_DATABASE.NAME_KEY];
             const threads = result[TEST_DATABASE.THREADS_KEY];
 
-            console.log(result);
+            //console.log(result);
 
-            try {
-                this.setup(name, baseUrls, generatorCode, threads);
-            }
-            catch (e) {
-                console.error('How did you get here? ' + e);
-            }
+            this.setup(name, baseUrls, generatorCode, threads);
         })
     }
 
     private setup(name: string, baseUrls: string[], generatorCode: string, threads: number): void {
-        const testGeneratorGetter = <TestGeneratorGetter>new Function('baseUrl', generatorCode);
+        const testIteratorGetter: TestIteratorGetter = SANDBOX_HANDLER.createGenerator.bind(SANDBOX_HANDLER, generatorCode);
 
         //setup the header
         const h3: HTMLHeadingElement = document.createElement('h3');
@@ -66,7 +58,7 @@ class TestView {
             tarea.style.cssFloat = 'right';
             mainViewDiv.appendChild(tarea);
 
-            this.tests.push(new TestRunner(textarea, tarea, testGeneratorGetter(url)));
+            this.tests.push(new TestRunner(textarea, tarea, testIteratorGetter.bind(SANDBOX_HANDLER, url)));
         }
         this.elmnt.appendChild(mainViewDiv);
 
